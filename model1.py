@@ -21,7 +21,6 @@ In general, when tetsing the model on three grammar types, the rule of thumb is 
 grows, the model corresponding to hierarchical type performs better
 """
 import numpy as np
-import nltk
 
 FREE = "Free"
 PRG = "Regular"
@@ -31,56 +30,61 @@ def geometric(n, p):
     # geometric distribution
     return p * np.pow(1.0 - p, n - 1)
 
-def compute_prior(P, n, V):
-    # P : number of productions
-    # n: number of non terminals
-    # V: Vocabulary size
+def compute_prior(G, corpus, n):
+    # P : number of productions for grammar G
+    # n: number of non terminals for grammar G
+    # V: Vocabulary size = # num non terminals + # num terminals = len(corpus[level])
+    productions = G[level]
+    P = len(productions)
+    V = len(corpus[level])
     prob_P = np.log(geometric(P, 0.5))
     prob_n = np.log(geometric(n, 0.5))
     log_prior = prob_P + prob_n
 
     for i in range(P):
-        N_i = 1 # num symbols for production i
+        N_i = len(list(productions.keys())[i])# num symbols for production i
         prob_N_i = geometric(N_i, 0.5)
         for j in range(N_i):
-            log_prior = prior + np.log(prob_N_i) - np.log(V)
+            log_prior += prior + np.log(prob_N_i) - np.log(V)
     return log_prior
     
-def compute_log_likelihood(k):
-    # k: number of sentence types in corpus
+def compute_log_likelihood(corpus, G, T, level):
+    # k: number of unique sentence types in corpus
     log_likelihood = 0
+    D = corpus[level] # sentence forms at specified level in corpus
+    k = len(D) # get num diff sentence forms at given level
+    productions = G[level]
     for i in range(k):
-        log_likelihood += np.log(compute_sentence_likelihood())
+        sentence_i = D[i]
+        log_likelihood += np.log(compute_sentence_likelihood(sentence_i, productions))
     return log_likelihood
+
+def compute_sentence_likelihood(S_i, productions):
+    # sum of probability of generating S_i under all possible parses
+    # productions = "S -> U" # example
+    prob = 0
+    prods = list(productions.keys())
+    for p in prods:
+        p_split = p.split("->") # change based on how the prod symbols are seperated
+        s1 = p_split[0]
+        s2 = p_split[1] # should be only two prod symbols per production
+        for i, token in enumerate(S_i[:-1]):
+            if s1 == token and s2 == S_i[i + 1]:
+                prob += productions[p]
+    return prob
 
 def compute_log_posterior(log_prior, log_likelihood):
 
-    return log_prior + log_likelihood
+    return log_prior + log_likelihood + np.log((1.0 / 3.0))
 
-
-def compute_vocab_size(T):
-    """TODO (doesnt affect results too much, but it does skew results in the favour
-    of linear grammars over context free ones), so for now we just use the literal size
-    of the corpus vocab
-    """
-
-    if T == FREE:
-        pass
-    elif T == PRG:
-        pass
-    elif T == PCFG:
-        pass
-    else:
-        # good enough to return size of vocab for all cases
-        pass
 
 if __name__ == "__main__":
 
     # main compute loop
-    # main loop eliminated for now, testing nltk for parsing
-    nltk.download("averaged_perceptron_tagger")
-    text = nltk.word_tokenize("Lets see if this stuff works")
-    print(nltk.pos_tag(text))
-    
+    # corpus datastruct: read in corpus data from perfors folder and put into corpus class object from process.py
+    # grammar table G needs to have probability for each production:
+    # G: {keys = levels: values = {keys = production : values = probability of production}}
+    # also, you need G for each grammar type in T
+    pass
     
 
