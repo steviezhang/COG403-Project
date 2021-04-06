@@ -55,7 +55,7 @@ def geometric(n, p):
     # geometric distribution
     return p * np.power(1.0 - p, n - 1, dtype=np.float64)
 
-def compute_prior(G, corpus, n, level):
+def compute_prior(G, corpus, n, level, flag=False): # flag for NLTK
     # P : number of productions for grammar G
     # n: number of non terminals for grammar G
     # V: Vocabulary size = # num non terminals + # num terminals = len(corpus[level])
@@ -67,21 +67,29 @@ def compute_prior(G, corpus, n, level):
     log_prior = prob_P + prob_n
 
     for i in range(P):
-        N_i = len(list(productions.keys())[i])# num symbols for production i
+        if flag:
+            N_i = len(productions[i])
+        else:
+            N_i = len(list(productions.keys())[i])# num symbols for production i
         prob_N_i = geometric(N_i, 0.5)
         log_prior -= (N_i * np.log(V))
         log_prior += prob_N_i
     return log_prior
     
-def compute_log_likelihood(corpus, G, T, level):
+
+def compute_log_likelihood(corpus, G, T, level, flag=False):
     # k: number of unique sentence types in corpus
     log_likelihood = 0
     D = corpus.corp # sentence forms at specified level in corpus
     k = len(D) # get num diff sentence forms at given level
     productions = G
     for i in range(k):
-        sentence_i = D[i].split(" ")
-        sl =compute_sentence_likelihood(sentence_i, productions)
+        sl = None
+        if flag:
+            sl = compute_sentence_likelihood_nltk(productions ,D[i].split("  ->  "))
+        else:
+            sentence_i = D[i].split(" ")
+            sl = compute_sentence_likelihood(sentence_i, productions)
 
         if sl != 0:
             log_likelihood += np.log(sl)
@@ -98,7 +106,20 @@ def compute_sentence_likelihood(S_i, productions):
         s2 = p_split[1] # should be only two prod symbols per production
         for i, token in enumerate(S_i[:-1]):
             if s1 == token and s2 == S_i[i + 1]:
-                prob += productions[p]
+                prob += np.log(productions[p])
+    return prob
+
+def compute_sentence_likelihood_nltk(G, productions):
+    prob = 0
+    prods = list(G.keys())
+    S_i = productions
+    for p in prods:
+        p_split = p.split("->")
+        s1 = p_split[0]
+        s2 = p_split[1]
+        for i, token in enumerate(S_i[:-1]):
+            if s1 == token and s2 == S_i[i + 1]:
+                prob += np.log(G[p])
     return prob
 
 def compute_log_posterior(log_prior, log_likelihood):
@@ -243,7 +264,7 @@ if __name__ == "__main__":
     grammarToParse = str(nltkgrammar).split("\n")
     finalGrammar = []
     grammarDict = {}
-
+    
     for g in grammarToParse:
         finalGrammar.append(g[4:])
 
