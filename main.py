@@ -84,8 +84,11 @@ def compute_prior(G, corpus, n, level, flag=False): # flag for NLTK
 def compute_log_likelihood(corpus, G, T, level, flag=False):
     # k: number of unique sentence types in corpus
     log_likelihood = 0
-    D = corpus.corp # sentence forms at specified level in corpus
-    k = len(D) # get num diff sentence forms at given level
+    if flag:
+        k = len(corpus)
+    else:
+        D = corpus.corp # sentence forms at specified level in corpus
+        k = len(D) # get num diff sentence forms at given level
     productions = G
     for i in range(k):
         sl = None
@@ -214,50 +217,50 @@ def inducePCFGFromProductions(productions):
 
 if __name__ == "__main__":
 
-    # speakers, struct = read_and_return(directory) # this function was used before perfors sent his data
+    speakers, struct = read_and_return(directory) # this function was used before perfors sent his data
 
-    # corp = []
-    # types = {}
-    # for fp in struct:
-    #     for segments in struct[fp]:
-    #         t = ""
-    #         for s in segments[:-1]:
-    #             token = s.split("|")[0].split(":")[0]
+    corp = []
+    types = {}
+    for fp in struct:
+        for segments in struct[fp]:
+            t = ""
+            for s in segments[:-1]:
+                token = s.split("|")[0].split(":")[0]
                 
-    #             if ("#" in token):
-    #                 token = token.split("#")[1]
+                if ("#" in token):
+                    token = token.split("#")[1]
 
-    #             t += token + " "
-    #         corp.append(t[:-1])
-    #         splitter = t.split(" ")[:-1]
+                t += token + " "
+            corp.append(t[:-1])
+            splitter = t.split(" ")[:-1]
 
-    #         for i in range(len(splitter)):
-    #             if (i < (len(splitter) - 1)):
-    #                 tok = splitter[i] + "->" + splitter[i+1]   
+            for i in range(len(splitter)):
+                if (i < (len(splitter) - 1)):
+                    tok = splitter[i] + "->" + splitter[i+1]   
             
-    #                 if tok in types:
-    #                     types[tok] += 1
-    #                 else:
-    #                     types[tok] = 1
+                    if tok in types:
+                        types[tok] += 1
+                    else:
+                        types[tok] = 1
     
-    # data = corpus()
-    # data.sort_sentence_types(types)
-    # data.corp = corp
-    # adam_level1 = data.sentence_forms[1] 
-    # adam_level2 = data.sentence_forms[2]
-    # adam_level3 = data.sentence_forms[3]
-    # adam_level4 = data.sentence_forms[4] 
-    # adam_level5 = data.sentence_forms[5]
-    # adam_level6 = data.sentence_forms[6]  
+    data = corpus()
+    data.sort_sentence_types(types)
+    data.corp = corp
+    adam_level1 = data.sentence_forms[1] 
+    adam_level2 = data.sentence_forms[2]
+    adam_level3 = data.sentence_forms[3]
+    adam_level4 = data.sentence_forms[4] 
+    adam_level5 = data.sentence_forms[5]
+    adam_level6 = data.sentence_forms[6]  
 
-    # print("FREQUENCY WEIGHTED CFG")
-    # for i in range(6):
-    #     print("----------------")
-    #     print("LEVEL " + str(i+1))
-    #     prior, likelihood, logpost = test_functions(data.sentence_forms[i+1], i+1)
-    #     print("Log Prior: " + str(prior))
-    #     print("Log Likelihood: " + str(likelihood))
-    #     print("Log Posterior: " + str(logpost))
+    print("FREQUENCY WEIGHTED CFG")
+    for i in range(6):
+        print("----------------")
+        print("LEVEL " + str(i+1))
+        prior, likelihood, logpost = test_functions(data.sentence_forms[i+1], i+1)
+        print("Log Prior: " + str(prior))
+        print("Log Likelihood: " + str(likelihood))
+        print("Log Posterior: " + str(logpost))
 
 
     
@@ -278,7 +281,24 @@ if __name__ == "__main__":
         value = gg[1][:-1]
 
         grammarDict[rule] = float(value)
-        
-    print(grammarDict)
+
+    terminal_pattern = "[.?!]"
+    terminal_sum = 0
+    for j in grammarDict.keys():
+        terminal = re.search(terminal_pattern, j)
+
+        if terminal:
+            terminal_sum += 1
+
+    prior = compute_prior(grammarDict, productions, terminal, 0, True)
+    likelihood = compute_log_likelihood(productions, grammarDict, PCFG, 0, True)
+    logpost = compute_log_posterior(prior, likelihood)
+
+    print("Log Prior: " + str(prior))
+    print("Log Likelihood: " + str(likelihood))
+    print("Log Posterior: " + str(logpost))
+
+    
+
     
 
