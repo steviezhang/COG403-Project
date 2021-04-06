@@ -59,7 +59,11 @@ def compute_prior(G, corpus, n, level, flag=False): # flag for NLTK
     # P : number of productions for grammar G
     # n: number of non terminals for grammar G
     # V: Vocabulary size = # num non terminals + # num terminals = len(corpus[level])
-    productions = G
+    productions = None
+    if flag:
+        productions = corpus
+    else:
+        productions = G
     P = len(productions)
     V = None
     if flag:
@@ -84,8 +88,11 @@ def compute_prior(G, corpus, n, level, flag=False): # flag for NLTK
 def compute_log_likelihood(corpus, G, T, level, flag=False):
     # k: number of unique sentence types in corpus
     log_likelihood = 0
+    D = None
+    k = None
     if flag:
         k = len(corpus)
+        D = corpus
     else:
         D = corpus.corp # sentence forms at specified level in corpus
         k = len(D) # get num diff sentence forms at given level
@@ -93,7 +100,7 @@ def compute_log_likelihood(corpus, G, T, level, flag=False):
     for i in range(k):
         sl = None
         if flag:
-            sl = compute_sentence_likelihood_nltk(productions ,D[i].split("  ->  "))
+            sl = compute_sentence_likelihood_nltk(productions, D[:50])
         else:
             sentence_i = D[i].split(" ")
             sl = compute_sentence_likelihood(sentence_i, productions)
@@ -113,7 +120,7 @@ def compute_sentence_likelihood(S_i, productions):
         s2 = p_split[1] # should be only two prod symbols per production
         for i, token in enumerate(S_i[:-1]):
             if s1 == token and s2 == S_i[i + 1]:
-                prob += np.log(productions[p])
+                prob += productions[p]
     return prob
 
 def compute_sentence_likelihood_nltk(G, productions):
@@ -121,7 +128,7 @@ def compute_sentence_likelihood_nltk(G, productions):
     prods = list(G.keys())
     S_i = productions
     for p in prods:
-        p_split = p.split("->")
+        p_split = p.split(" -> ")
         s1 = p_split[0]
         s2 = p_split[1]
         for i, token in enumerate(S_i[:-1]):
@@ -211,9 +218,6 @@ def inducePCFGFromProductions(productions):
     grammar = induce_pcfg(S, productions)
     return grammar
 
-    
-
-
 
 if __name__ == "__main__":
 
@@ -261,8 +265,9 @@ if __name__ == "__main__":
         print("Log Prior: " + str(prior))
         print("Log Likelihood: " + str(likelihood))
         print("Log Posterior: " + str(logpost))
+        
 
-
+    exit()
     
     trees = loadTrees("Parsetree/brown-adam.parsed") 
     productions = productionsFromTrees(trees)
@@ -290,12 +295,11 @@ if __name__ == "__main__":
         if terminal:
             terminal_sum += 1
 
-    prior = compute_prior(grammarDict, productions, terminal, 0, True)
-    likelihood = compute_log_likelihood(productions, grammarDict, PCFG, 0, True)
-    logpost = compute_log_posterior(prior, likelihood)
-
+    prior = compute_prior(grammarDict, productions, terminal_sum, 0, True)
     print("Log Prior: " + str(prior))
+    likelihood = compute_log_likelihood(productions, grammarDict, PCFG, 0, True)
     print("Log Likelihood: " + str(likelihood))
+    logpost = compute_log_posterior(prior, likelihood)
     print("Log Posterior: " + str(logpost))
 
     
