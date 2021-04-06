@@ -61,7 +61,11 @@ def compute_prior(G, corpus, n, level, flag=False): # flag for NLTK
     # V: Vocabulary size = # num non terminals + # num terminals = len(corpus[level])
     productions = G
     P = len(productions)
-    V = len(corpus.sentence_forms[level])
+    V = None
+    if flag:
+        V = len(corpus)
+    else:
+        V = len(corpus.sentence_forms[level])
     prob_P = np.log(geometric(P, 0.5))
     prob_n = np.log(geometric(n, 0.5))
     log_prior = prob_P + prob_n
