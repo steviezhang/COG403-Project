@@ -7,6 +7,7 @@ class corpus:
         self.sentence_forms = {}
         for i in range(6): # init six levels
             self.sentence_forms[i + 1] = {}
+        self.corp = []
 
 
     def sort_sentence_types(self, types):
@@ -69,12 +70,15 @@ def compute_prior(G, corpus, n, level):
 def compute_log_likelihood(corpus, G, T, level):
     # k: number of unique sentence types in corpus
     log_likelihood = 0
-    D = corpus[level] # sentence forms at specified level in corpus
+    D = corpus.corp # sentence forms at specified level in corpus
     k = len(D) # get num diff sentence forms at given level
-    productions = G[level]
+    productions = G
     for i in range(k):
-        sentence_i = D[i]
-        log_likelihood += np.log(compute_sentence_likelihood(sentence_i, productions))
+        sentence_i = D[i].split(" ")
+        sl =compute_sentence_likelihood(sentence_i, productions)
+
+        if sl != 0:
+            log_likelihood += np.log(sl)
     return log_likelihood
 
 def compute_sentence_likelihood(S_i, productions):
@@ -111,14 +115,20 @@ def test_functions(adam_levelk, k):
     for j in adam_levelk.keys():
         adam_levelk_probabilities[j] = adam_levelk[j]/total
   
-
     levelk_nonterminal = (len(adam_levelk) - levelk_terminal)
-    print(compute_prior(adam_levelk_probabilities, data, levelk_nonterminal, k))
+    prior = compute_prior(adam_levelk_probabilities, data, levelk_nonterminal, k)
+    likelihood = compute_log_likelihood(data, adam_levelk_probabilities, PCFG, k)
+    logpost = compute_log_posterior(prior, likelihood)
+
+    return prior, likelihood, logpost
+    
 
 import os
 
 directory = "Adam/"
 people = ["*MOT", "*URS", "*RIC", "*COL", "*CHI"]
+
+
 def read_and_return(directory):
     speakers = {}
     struct = {}
@@ -143,24 +153,56 @@ def read_and_return(directory):
 
 if __name__ == "__main__":
     speakers, struct = read_and_return(directory) # this function was used before perfors sent his data
+
+    corp = []
     types = {}
     for fp in struct:
         for segments in struct[fp]:
-            t = "S"
+            t = ""
             for s in segments[:-1]:
-                token = s.split("|")[0].split(":")[0]
-                t += "->" + token
-            if t in types:
-                types[t] += 1
-            else:
-                types[t] = 1
+                token = s.split("|")[0]
+
+                if token == "pro:sub":
+                    #pro:sub is a subject
+                    token = "S"
+
+                token = token.split(":")[0]
+                
+                if ("#" in token):
+                    token = token.split("#")[1]
+
+                t += token + " "
+            corp.append(t[:-1])
+            splitter = t.split(" ")[:-1]
+
+            for i in range(len(splitter)):
+                if (i < (len(splitter) - 1)):
+                    tok = splitter[i] + "->" + splitter[i+1]   
+            
+                    if tok in types:
+                        types[tok] += 1
+                    else:
+                        types[tok] = 1
     
     data = corpus()
     data.sort_sentence_types(types)
+    data.corp = corp
     adam_level1 = data.sentence_forms[1] 
     adam_level2 = data.sentence_forms[2]
     adam_level3 = data.sentence_forms[3]
     adam_level4 = data.sentence_forms[4] 
     adam_level5 = data.sentence_forms[5]
     adam_level6 = data.sentence_forms[6]  
-    test_functions(adam_level5, 5)
+
+    for i in range(5):
+        print("----------------")
+        print("LEVEL " + str(i+1))
+        prior, likelihood, logpost = test_functions(data.sentence_forms[i+1], i+1)
+        print("Log Prior: " + str(prior))
+        print("Log Likelihood: " + str(likelihood))
+        print("Log Posterior: " + str(logpost))
+
+    total = sum(data.sentence_forms[3].values())
+    adam_levelk_probabilities = {}
+    for j in data.sentence_forms[3].keys():
+        adam_levelk_probabilities[j] = data.sentence_forms[3][j]/total
