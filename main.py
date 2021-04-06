@@ -3,6 +3,7 @@ import re
 from nltk import Tree
 from nltk import induce_pcfg
 from nltk import Nonterminal
+from nltk.parse.generate import generate
 
 
 class corpus:
@@ -171,14 +172,13 @@ def loadTrees(path):
 
     return tree
 
-
-def inducePCFGFromParseTrees(trees):
-    print("Induce PCFG grammar from treebank data:")
-
+def productionsFromTrees(trees):
     productions = []
     for tree in trees:
         productions += tree.productions()
+    return productions
 
+def inducePCFGFromProductions(productions):
     S = Nonterminal('S')
     grammar = induce_pcfg(S, productions)
     return grammar
@@ -189,58 +189,71 @@ def inducePCFGFromParseTrees(trees):
 
 if __name__ == "__main__":
 
-    speakers, struct = read_and_return(directory) # this function was used before perfors sent his data
+    # speakers, struct = read_and_return(directory) # this function was used before perfors sent his data
 
-    corp = []
-    types = {}
-    for fp in struct:
-        for segments in struct[fp]:
-            t = ""
-            for s in segments[:-1]:
-                token = s.split("|")[0]
-
-                if token == "pro:sub":
-                    #pro:sub is a subject
-                    token = "S"
-
-                token = token.split(":")[0]
+    # corp = []
+    # types = {}
+    # for fp in struct:
+    #     for segments in struct[fp]:
+    #         t = ""
+    #         for s in segments[:-1]:
+    #             token = s.split("|")[0].split(":")[0]
                 
-                if ("#" in token):
-                    token = token.split("#")[1]
+    #             if ("#" in token):
+    #                 token = token.split("#")[1]
 
-                t += token + " "
-            corp.append(t[:-1])
-            splitter = t.split(" ")[:-1]
+    #             t += token + " "
+    #         corp.append(t[:-1])
+    #         splitter = t.split(" ")[:-1]
 
-            for i in range(len(splitter)):
-                if (i < (len(splitter) - 1)):
-                    tok = splitter[i] + "->" + splitter[i+1]   
+    #         for i in range(len(splitter)):
+    #             if (i < (len(splitter) - 1)):
+    #                 tok = splitter[i] + "->" + splitter[i+1]   
             
-                    if tok in types:
-                        types[tok] += 1
-                    else:
-                        types[tok] = 1
+    #                 if tok in types:
+    #                     types[tok] += 1
+    #                 else:
+    #                     types[tok] = 1
     
-    data = corpus()
-    data.sort_sentence_types(types)
-    data.corp = corp
-    adam_level1 = data.sentence_forms[1] 
-    adam_level2 = data.sentence_forms[2]
-    adam_level3 = data.sentence_forms[3]
-    adam_level4 = data.sentence_forms[4] 
-    adam_level5 = data.sentence_forms[5]
-    adam_level6 = data.sentence_forms[6]  
+    # data = corpus()
+    # data.sort_sentence_types(types)
+    # data.corp = corp
+    # adam_level1 = data.sentence_forms[1] 
+    # adam_level2 = data.sentence_forms[2]
+    # adam_level3 = data.sentence_forms[3]
+    # adam_level4 = data.sentence_forms[4] 
+    # adam_level5 = data.sentence_forms[5]
+    # adam_level6 = data.sentence_forms[6]  
 
-    print("FREQUENCY WEIGHTED CFG")
-    for i in range(6):
-        print("----------------")
-        print("LEVEL " + str(i+1))
-        prior, likelihood, logpost = test_functions(data.sentence_forms[i+1], i+1)
-        print("Log Prior: " + str(prior))
-        print("Log Likelihood: " + str(likelihood))
-        print("Log Posterior: " + str(logpost))
+    # print("FREQUENCY WEIGHTED CFG")
+    # for i in range(6):
+    #     print("----------------")
+    #     print("LEVEL " + str(i+1))
+    #     prior, likelihood, logpost = test_functions(data.sentence_forms[i+1], i+1)
+    #     print("Log Prior: " + str(prior))
+    #     print("Log Likelihood: " + str(likelihood))
+    #     print("Log Posterior: " + str(logpost))
 
 
     
     trees = loadTrees("Parsetree/brown-adam.parsed") 
-    nltkgrammar = inducePCFGFromParseTrees(trees)
+    productions = productionsFromTrees(trees)
+    nltkgrammar = inducePCFGFromProductions(productions)
+
+    grammarToParse = str(nltkgrammar).split("\n")
+    finalGrammar = []
+    grammarDict = {}
+
+    for g in grammarToParse:
+        finalGrammar.append(g[4:])
+
+    for fg in finalGrammar[1:]:
+        gg = fg.split("[")
+        rule = gg[0][:-1]
+        value = gg[1][:-1]
+
+        grammarDict[rule] = float(value)
+        
+    print(grammarDict)
+    
+
