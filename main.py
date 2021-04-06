@@ -159,14 +159,10 @@ def loadTrees(path):
     for i in range(len(data)):
         #flatten it and strip extra whitespace
         flattened_data.append(" ".join(data[i].replace("\n", "").split()))
-    
-    print(flattened_data[11])
 
     for i, s in enumerate(flattened_data[:-2]):
         if "R" in s:
-            print(s)
             t = Tree.fromstring(s)
-            print(i)
 
 
 def inducePCFGFromParseTree(treepath):
