@@ -5,7 +5,7 @@ from nltk import induce_pcfg
 from nltk import Nonterminal
 from nltk.parse.generate import generate
 
-
+epsilon = 1e-20 
 class corpus:
 # stores all sentence forms in data
     def __init__(self):
@@ -52,7 +52,6 @@ PRG = "Regular"
 PCFG = "Context Free"
 
 def geometric(n, p):
-    # geometric distribution
     return p * np.power(1.0 - p, n - 1, dtype=np.float64)
 
 def compute_prior(G, corpus, n, level, flag=False): # flag for NLTK
@@ -70,8 +69,8 @@ def compute_prior(G, corpus, n, level, flag=False): # flag for NLTK
         V = len(corpus)
     else:
         V = len(corpus.sentence_forms[level])
-    prob_P = np.log(geometric(P, 0.5))
-    prob_n = np.log(geometric(n, 0.5))
+    prob_P = np.log(geometric(P, 0.5)+epsilon)
+    prob_n = np.log(geometric(n, 0.5)+epsilon)
     log_prior = prob_P + prob_n
 
     for i in range(P):
@@ -82,6 +81,7 @@ def compute_prior(G, corpus, n, level, flag=False): # flag for NLTK
         prob_N_i = geometric(N_i, 0.5)
         log_prior -= (N_i * np.log(V))
         log_prior += prob_N_i
+
     return log_prior
     
 
@@ -266,8 +266,6 @@ if __name__ == "__main__":
         print("Log Likelihood: " + str(likelihood))
         print("Log Posterior: " + str(logpost))
         
-
-    exit()
     
     trees = loadTrees("Parsetree/brown-adam.parsed") 
     productions = productionsFromTrees(trees)
@@ -295,6 +293,7 @@ if __name__ == "__main__":
         if terminal:
             terminal_sum += 1
 
+    print("PROBABALISTIC PCFG")
     prior = compute_prior(grammarDict, productions, terminal_sum, 0, True)
     print("Log Prior: " + str(prior))
     likelihood = compute_log_likelihood(productions, grammarDict, PCFG, 0, True)
