@@ -6,6 +6,7 @@ The rnng notebook base code was used from https://github.com/kmccurdy/rnng-noteb
 Additions were made for data analysis and stats for paper.
 
 main.py file contains experiment code for pcfg induction and scoring code
+- Due to the large amount of production rules generated from the data, the log likelihood function takes ~ 12 hrs to run for the probabilistic PCFG
 
 Parsetree directory contains Adam's corpus in treebank fashion parsed for use in main.py
 
